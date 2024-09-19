@@ -52,7 +52,7 @@ defmodule ActivityPub.MixProject do
   # Type `mix help deps` for examples and options.
   defp deps do
     [
-      {:phoenix, "~> 1.6.6"},
+      {:phoenix, "~> 1.7.7"},
       {:phoenix_html_helpers, "~> 1.0"},
       {:phoenix_ecto, "~> 4.4"},
       {:ecto_sql, "~> 3.8"},
@@ -84,7 +84,7 @@ defmodule ActivityPub.MixProject do
       },
       # {:needle,
       #   #"~> 0.5"
-      #   git: "https://github.com/bonfire-networks/needle", 
+      #   git: "https://github.com/bonfire-networks/needle",
       #   optional: true
       # },
       {:ex_doc, "~> 0.22", only: [:dev, :test], runtime: false},

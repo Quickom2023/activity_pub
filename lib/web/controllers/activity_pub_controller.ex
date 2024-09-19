@@ -9,18 +9,14 @@ defmodule ActivityPub.Web.ActivityPubController do
   use ActivityPub.Web, :controller
 
   import Untangle
-
+  require Logger
   alias ActivityPub.Config
   alias ActivityPub.Actor
-  alias ActivityPub.Federator.Fetcher
   alias ActivityPub.Object
   alias ActivityPub.Utils
   alias ActivityPub.Federator.Adapter
-  alias ActivityPub.Instances
-  alias ActivityPub.Safety.Containment
 
   alias ActivityPub.Web.ActorView
-  alias ActivityPub.Federator
   alias ActivityPub.Web.ObjectView
   # alias ActivityPub.Web.RedirectController
 
@@ -92,7 +88,7 @@ defmodule ActivityPub.Web.ActivityPubController do
       # querying by pointer - handle local objects
       #  true <- object.id != id, # huh?
       #  current_user <- Map.get(conn.assigns, :current_user, nil) |> debug("current_user"), # TODO: should/how users make authenticated requested?
-      # || Containment.visible_for_user?(object, current_user)) |> debug("public or visible for current_user?") 
+      # || Containment.visible_for_user?(object, current_user)) |> debug("public or visible for current_user?")
       maybe_object_json(Object.get_cached!(pointer: id) || Adapter.maybe_publish_object(id, true))
     else
       # query by UUID
@@ -250,5 +246,38 @@ defmodule ActivityPub.Web.ActivityPubController do
 
   defp page_number("true"), do: 1
   defp page_number(page) when is_binary(page), do: Integer.parse(page) |> elem(0)
-  defp page_number(_), do: 1
+  defp page_number(_), do: nil
+
+  def status(conn, %{"username" => username, "id" => id}) do
+    ap_id =
+      "#{Adapter.base_url()}/users/#{username}/statuses/#{id}"
+      |> info("status -> testtt")
+
+    cond do
+      get_format(conn) == "html" ->
+        redirect_to_url(conn, username)
+
+      federate_actor?(username, conn) ->
+        json_status_with_cache(conn, ap_id)
+
+      true ->
+        # redirect_to_url(conn, username)
+        Utils.error_json(conn, "this instance is not currently federating", 403)
+    end
+  end
+
+  def json_status_with_cache(conn_or_nil, id, opts \\ []) do
+    Utils.json_with_cache(
+      conn_or_nil,
+      &status_json/1,
+      :ap_object_cache,
+      id,
+      &maybe_return_json/4,
+      opts
+    )
+  end
+
+  defp status_json(json: id) do
+    maybe_object_json(Object.get_cached!(ap_id: id))
+  end
 end

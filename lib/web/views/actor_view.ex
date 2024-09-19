@@ -49,7 +49,8 @@ defmodule ActivityPub.Web.ActorView do
     %{
       "id" => "#{actor.ap_id}/following",
       "type" => "Collection",
-      "first" => collection(followers, "#{actor.ap_id}/following", 1, total),
+      # "first" => collection(followers, "#{actor.ap_id}/following", 1, total),
+      "first" => "#{actor.ap_id}/following?page=true",
       "totalItems" => total
     }
     |> Map.merge(Utils.make_json_ld_header(:actor))
@@ -72,7 +73,7 @@ defmodule ActivityPub.Web.ActorView do
     %{
       "id" => "#{actor.ap_id}/followers",
       "type" => "Collection",
-      "first" => collection(followers, "#{actor.ap_id}/followers", 1, total),
+      "first" => "#{actor.ap_id}/followers?page=true",
       "totalItems" => total
     }
     |> Map.merge(Utils.make_json_ld_header(:actor))

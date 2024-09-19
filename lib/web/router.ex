@@ -59,7 +59,7 @@ defmodule ActivityPub.Web.Router do
         get("/object/:uuid", ActivityPubController, :object)
 
         get("/actors/:username", ActivityPubController, :actor)
-        # options("/actors/:username", ActivityPubController, :actor) 
+        # options("/actors/:username", ActivityPubController, :actor)
         # note: singular is not canonical
         get("/actor/:username", ActivityPubController, :actor)
 
@@ -73,11 +73,20 @@ defmodule ActivityPub.Web.Router do
         pipe_through(:activity_json)
         pipe_through(:signed_activity_pub_fetch)
 
+        get("/users/:username/followers", ActivityPubController, :followers)
+        get("/users/:username/following", ActivityPubController, :following)
+        get("/users/:username/outbox", ActivityPubController, :outbox)
+        # maybe return inbox, or error saying only POST supported
+        get("/users/:username/inbox", ActivityPubController, :maybe_inbox)
+
         pipe_through(:activity_json_or_html)
 
         # URLs for interop with Mastodon clients / AP testing tools
-        # get("/api/v1/timelines/public", ActivityPubController, :outbox) # maybe return the public outbox 
+        # get("/api/v1/timelines/public", ActivityPubController, :outbox) # maybe return the public outbox
         get("/users/:username", ActivityPubController, :actor)
+        get("/users/:username/statuses/:id", ActivityPubController, :status)
+        get("/users/:username/status/:id", ActivityPubController, :status)
+        get("/shared_outbox", ActivityPubController, :outbox)
       end
 
       scope "/", ActivityPub.Web do

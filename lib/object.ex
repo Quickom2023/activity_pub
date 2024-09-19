@@ -294,6 +294,14 @@ defmodule ActivityPub.Object do
     attrs
     |> changeset()
     |> repo().insert()
+    |> tap(fn
+      {:ok, object} ->
+        # Invalidate :not_found cache
+        set_cache(object)
+
+      _ ->
+        :skip
+    end)
   end
 
   def maybe_upsert(:update, %ActivityPub.Object{} = existing_object, attrs) do
@@ -712,8 +720,24 @@ defmodule ActivityPub.Object do
     )
     |> Queries.ordered()
     |> Queries.by_actor(ap_id)
+    # |> Queries.by_type("Create")
     |> Queries.with_preloaded_object()
     |> repo().all()
+  end
+
+  def get_outbox_for_actor_count(%{ap_id: ap_id}), do: get_outbox_for_actor_count(ap_id)
+  def get_outbox_for_actor_count(%{"id" => ap_id}), do: get_outbox_for_actor_count(ap_id)
+
+  def get_outbox_for_actor_count(ap_id) when is_binary(ap_id) do
+    from(object in Object,
+      select: count(),
+      where:
+        object.public == true and
+          object.is_object != true
+    )
+    |> Queries.by_actor(ap_id)
+    |> Queries.by_type("Create")
+    |> repo().one()
   end
 
   def get_outbox_for_instance(page \\ 1) do
@@ -726,11 +750,20 @@ defmodule ActivityPub.Object do
     |> do_list_all(page)
   end
 
+  def get_outbox_for_instance_count() do
+    from(object in Object,
+      select: count(),
+      where:
+        object.local == true and
+          object.public == true and
+          object.is_object != true
+    )
+    |> repo().one()
+  end
+
   def get_inbox(all_or_instance_or_actor_url, page \\ 1)
 
   def get_inbox(:shared, page) do
-    offset = (page - 1) * 10
-
     from(object in Object,
       where:
         object.local == false and
@@ -751,6 +784,31 @@ defmodule ActivityPub.Object do
           object.is_object != true
     )
     |> do_list_all(page)
+  end
+
+  def get_inbox_count(:shared) do
+    from(object in Object,
+      select: count(),
+      where:
+        object.local == false and
+          object.public == true and
+          object.is_object != true
+    )
+    |> repo().one()
+  end
+
+  def get_inbox_count(instance_or_actor_url) do
+    instance_or_actor_filter = "#{instance_or_actor_url}%"
+
+    from(object in Object,
+      select: count(),
+      where:
+        fragment("(?)->>'actor' ilike ?", object.data, ^instance_or_actor_filter) and
+          object.local != true and
+          object.public == true and
+          object.is_object != true
+    )
+    |> repo().one()
   end
 
   defp do_list_all(query, page) do
@@ -910,4 +968,40 @@ defmodule ActivityPub.Object do
       |> select([o], fragment("?->>'id'", o.data))
       |> limit(^limit)
       |> repo().all()
+
+  # def get_followers_for_actor(ap_id, page \\ 1)
+  # def get_followers_for_actor(%{ap_id: ap_id}, page), do: get_followers_for_actor(ap_id, page)
+  # def get_followers_for_actor(%{"id" => ap_id}, page), do: get_followers_for_actor(ap_id, page)
+
+  # def get_followers_for_actor(ap_id, page) when is_binary(ap_id) do
+  #   offset = (page - 1) * 10
+
+  #   from(object in Object,
+  #     where:
+  #       object.public == true and
+  #         object.is_object != true,
+  #     limit: 10,
+  #     offset: ^offset
+  #   )
+  #   |> Queries.ordered()
+  #   |> Queries.by_object(ap_id)
+  #   |> Queries.by_type("Follow")
+  #   |> Queries.with_preloaded_object()
+  #   |> repo().all()
+  # end
+
+  # def get_followers_for_actor_count(%{ap_id: ap_id}), do: get_followers_for_actor_count(ap_id)
+  # def get_followers_for_actor_count(%{"id" => ap_id}), do: get_followers_for_actor_count(ap_id)
+
+  # def get_followers_for_actor_count(ap_id) when is_binary(ap_id) do
+  #   from(object in Object,
+  #     select: count(),
+  #     where:
+  #       object.public == true and
+  #         object.is_object != true
+  #   )
+  #   |> Queries.by_object(ap_id)
+  #   |> Queries.by_type("Follow")
+  #   |> repo().one()
+  # end
 end
