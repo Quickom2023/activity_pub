@@ -13,15 +13,15 @@ defmodule ActivityPub.Web.Router do
       end
 
       pipeline :webfinger do
-        plug(:accepts, ["json", "jrd+json", "activity+json", "ld+json"])
+        plug(:accepts, ["json", "jrd+json", "activity+json", "ld+json", "jsonld"])
       end
 
       pipeline :activity_json do
-        plug(:accepts, ["json", "activity+json", "ld+json"])
+        plug(:accepts, ["json", "activity+json", "ld+json", "jsonld"])
       end
 
       pipeline :activity_json_or_html do
-        plug(:accepts, ["json", "activity+json", "ld+json", "html"])
+        plug(:accepts, ["json", "activity+json", "ld+json", "html", "jsonld"])
       end
 
       pipeline :signed_activity_pub_incoming do
