@@ -818,7 +818,8 @@ defmodule ActivityPub.Federator.Transformer do
           "bto",
           "bcc",
           "directMessage",
-          "id"
+          "id",
+          "username"
         ])
     }
 
