@@ -32,7 +32,7 @@ defmodule ActivityPub.Web.ActorView do
     |> debug
   end
 
-  def render("following.json", %{actor: actor, page: page}) do
+  def render("following.json", %{actor: actor, page: page}) when not is_nil(page) do
     {:ok, followers} = Actor.get_followings(actor)
 
     total = length(followers)
@@ -56,7 +56,7 @@ defmodule ActivityPub.Web.ActorView do
     |> Map.merge(Utils.make_json_ld_header(:actor))
   end
 
-  def render("followers.json", %{actor: actor, page: page}) do
+  def render("followers.json", %{actor: actor, page: page}) when not is_nil(page) do
     followers = Actor.get_followers(actor)
 
     total = length(followers)
